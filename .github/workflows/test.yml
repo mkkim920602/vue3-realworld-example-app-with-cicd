@@ -9,26 +9,32 @@ on:
       - '**.md'
 
 jobs:
+
+  # 린트 테스트
   lint:
     name: Lint
     env:
       CI: true
 
+    # with ubuntu
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@master
 
       # https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping
+      # 16.x 버전의 node를 설치
       - name: Use Node.js 16.x
         uses: actions/setup-node@v1
         with:
           node-version: 16.x
 
+      # yarn cache를 사용하여 설치된 모든 라이브러리를 캐시에서 읽어옴
       - name: Get yarn cache
         id: yarn-cache
         run: echo "::set-output name=dir::$(yarn cache dir)"
 
+      # yarn cache에서 캐시된 라이브러리를 읽어옴
       - uses: actions/cache@v1
         with:
           path: ${{ steps.yarn-cache.outputs.dir }}
@@ -36,15 +42,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
+      # yarn 으로 의존성 라이브러리를 설치
       - name: Install dependencies
         run: yarn install --skip-integrity-check --non-interactive --no-progress
 
+      # 타입스크립트 린트 에러 체크
       - name: TypeScript check
         run: yarn lint:tsc
 
+      # EsLint 에러 체크
       - name: Eslint check
         run: yarn lint:script
 
+  # 단위 테스트
   unit_test:
     name: Unit test
     env:
@@ -75,14 +85,11 @@ jobs:
       - name: Install dependencies
         run: yarn install --skip-integrity-check --non-interactive --no-progress
 
+      # 단위 테스트
       - name: Unit test
         run: yarn test:unit:ci
 
-      - name: Update coverage report
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
+  # E2E 테스트
   e2e_tests:
     name: E2E test
     env:

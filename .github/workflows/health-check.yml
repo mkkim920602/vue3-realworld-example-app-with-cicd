@@ -1,8 +1,9 @@
-name: Check Swagger API
+name: Check E2E monthly
 
 on:
   schedule:
-    - cron: '35 17 */4 * 4'
+    # 매 월 4일 17시 35분에 실행
+    - cron: '35 17 */4 * *'
 
 jobs:
   e2e_tests:
