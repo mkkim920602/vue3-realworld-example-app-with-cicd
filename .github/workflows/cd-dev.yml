@@ -1,0 +1,60 @@
+name: Deploy to prod
+
+on:
+  push:
+    branches: [ main, dev ]
+  workflow_run:
+    branches: [ main ]
+
+
+jobs:
+  deploy:
+    name: Deploy Web
+    runs-on: [self-hosted, wsl]
+
+    steps:
+
+    # 현재 commit 을 checkout
+    - name: Check out current commit (${{ github.sha }})
+      uses: actions/checkout@v2
+
+    # https://github.com/microsoft/TypeScript/wiki/Node-Target-Mapping
+    # 16.x 버전의 node를 설치
+    - name: Use Node.js 16.x
+      uses: actions/setup-node@v1
+      with:
+        node-version: 16.x
+
+    # yarn cache를 사용하여 설치된 모든 라이브러리를 캐시에서 읽어옴
+    - name: Get yarn cache
+      id: yarn-cache
+      run: echo "::set-output name=dir::$(yarn cache dir)"
+
+    # yarn cache에서 캐시된 라이브러리를 읽어옴
+    - uses: actions/cache@v1
+      with:
+        path: ${{ steps.yarn-cache.outputs.dir }}
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+
+    # yarn 으로 의존성 라이브러리를 설치
+    - name: Install dependencies
+      run: yarn install --skip-integrity-check --non-interactive --no-progress
+
+    # yarn build 실행
+    - name: Build page
+      run: yarn build
+      env:
+        NODE_ENV: production
+
+    # pm2 실행
+    - name: Start server with pm2
+      run: pm2 start vue3-realworld-web
+      env:
+        NODE_ENV: production
+        PORT: 8080
+
+    # pm2 상태 확인
+    - name: Check pm2 status
+      run: pm2 status vue3-realworld-web
