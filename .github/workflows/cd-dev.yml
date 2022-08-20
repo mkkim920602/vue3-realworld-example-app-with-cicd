@@ -2,8 +2,6 @@ name: Deploy to dev
 
 on:
   push:
-    branches: [ main, dev ]
-  workflow_run:
     branches: [ main ]
 
 
